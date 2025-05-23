@@ -38,9 +38,10 @@ const client = new MongoClient(uri, {
 async function run() {
     try {
         // Connect the client to the server	(optional starting in v4.7)
-        await client.connect();
+        // await client.connect();
         const workCollection = client.db('workDB').collection('working')
         const UsersCollection = client.db('workDB').collection('users')
+        // const Usersbits = client.db('workDB').collection('bits')
 
         app.get('/working', async (req, res) => {
             const result = await workCollection.find().toArray();
@@ -71,7 +72,7 @@ async function run() {
 
             const result = await workCollection.updateOne(filter, updateDoc, options);
 
-            res.send(result); // ✅ This is required
+            res.send(result);
         });
 
         app.delete('/working/:id', async (req, res) => {
@@ -82,6 +83,16 @@ async function run() {
         })
         // user related APIs
 
+        app.get('/users', async (req, res) => {
+            const result = await UsersCollection.find().toArray();
+            res.send(result)
+        })
+
+        app.get('/users', async (req, res) => {
+            const result = await UsersCollection.find().toArray();
+            res.send(result)
+        })
+
         app.post('/users', async (req, res) => {
             const UserProfile = req.body;
             console.log(UserProfile);
@@ -89,13 +100,17 @@ async function run() {
             res.send(result)
         })
 
+        // Bits Cloction
+
+        // app.get('/bits', async (req, res) => {
+        //     const taskId = req.params.taskId;
+        //     const query = { taskId: taskId };
+        //     const bids = await Usersbits.find(query).toArray();
+        //     res.send(bids);
+        // });
 
 
 
-
-
-        await client.db("admin").command({ ping: 1 });
-        console.log("Pinged your deployment. You successfully connected to MongoDB!");
     } finally {
         // Ensures that the client will close when you finish/error
         // await client.close();
