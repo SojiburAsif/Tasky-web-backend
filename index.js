@@ -1,32 +1,18 @@
 const express = require('express');
 const cors = require('cors');
-const app = express();
-require('dotenv').config()
-const port = process.env.PORT || 3000;
+const jwt = require('jsonwebtoken'); // ✅ JWT package import
+require('dotenv').config();
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
-// tasky-web
-// pass: 41T4urk95N9Tx1rj
-
-
-
+const app = express();
+const port = process.env.PORT || 3000;
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json()); // ✅ Body parser
 
-
-
-// console.log(process.env.DB_USER);
-// console.log(process.env.DB_PASS);
-
+// MongoDB URI
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@project-server.fv9q8on.mongodb.net/?retryWrites=true&w=majority&appName=Project-server`;
 
-
-
-
-// const uri = "mongodb+srv://<db_username>:<db_password>@project-server.fv9q8on.mongodb.net/?retryWrites=true&w=majority&appName=Project-server";
-
-// Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
     serverApi: {
         version: ServerApiVersion.v1,
@@ -37,93 +23,84 @@ const client = new MongoClient(uri, {
 
 async function run() {
     try {
-        // Connect the client to the server	(optional starting in v4.7)
-        // await client.connect();
-        const workCollection = client.db('workDB').collection('working')
-        const UsersCollection = client.db('workDB').collection('users')
-        // const Usersbits = client.db('workDB').collection('bits')
+        const workCollection = client.db('workDB').collection('working');
+        const UsersCollection = client.db('workDB').collection('users');
 
+        // --- Work APIs ---
         app.get('/working', async (req, res) => {
             const result = await workCollection.find().toArray();
-            res.send(result)
-        })
+            res.send(result);
+        });
+
         app.get('/working/:id', async (req, res) => {
             const id = req.params.id;
-            const query = { _id: new ObjectId(id) }
-            const result = await workCollection.findOne(query)
-            res.send(result)
-        })
+            const result = await workCollection.findOne({ _id: new ObjectId(id) });
+            res.send(result);
+        });
 
         app.post('/working', async (req, res) => {
             const newWork = req.body;
-            console.log(newWork);
             const result = await workCollection.insertOne(newWork);
-            res.send(result)
-        })
+            res.send(result);
+        });
+
         app.put('/working/:id', async (req, res) => {
             const id = req.params.id;
-            const filter = { _id: new ObjectId(id) };
-            const options = { upsert: true };
             const updateWork = req.body;
-
-            const updateDoc = {
-                $set: updateWork
-            };
-
-            const result = await workCollection.updateOne(filter, updateDoc, options);
-
+            const result = await workCollection.updateOne(
+                { _id: new ObjectId(id) },
+                { $set: updateWork },
+                { upsert: true }
+            );
             res.send(result);
         });
 
         app.delete('/working/:id', async (req, res) => {
             const id = req.params.id;
-            const query = { _id: new ObjectId(id) }
-            const result = await workCollection.deleteOne(query);
-            res.send(result)
-        })
-        // user related APIs
+            const result = await workCollection.deleteOne({ _id: new ObjectId(id) });
+            res.send(result);
+        });
 
+        // --- Users API ---
         app.get('/users', async (req, res) => {
             const result = await UsersCollection.find().toArray();
-            res.send(result)
-        })
-
-        app.get('/users', async (req, res) => {
-            const result = await UsersCollection.find().toArray();
-            res.send(result)
-        })
+            res.send(result);
+        });
 
         app.post('/users', async (req, res) => {
-            const UserProfile = req.body;
-            console.log(UserProfile);
-            const result = await UsersCollection.insertOne(UserProfile);
-            res.send(result)
-        })
+            const user = req.body;
+            const result = await UsersCollection.insertOne(user);
+            res.send(result);
+        });
 
-        // Bits Cloction
+        // ✅ JWT Route
+        app.post('/jwt', (req, res) => {
+            const user = req.body;
 
-        // app.get('/bits', async (req, res) => {
-        //     const taskId = req.params.taskId;
-        //     const query = { taskId: taskId };
-        //     const bids = await Usersbits.find(query).toArray();
-        //     res.send(bids);
-        // });
+            // যদি email না থাকে তাহলে error
+            if (!user || !user.email) {
+                return res.status(400).send({ message: 'Email is required for token' });
+            }
 
+            const token = jwt.sign(user, process.env.JWT_ACCESS_SECRET, {
+                expiresIn: '2h',
+            });
 
+            res.send({ success: true, token });
+        });
 
     } finally {
-        // Ensures that the client will close when you finish/error
-        // await client.close();
+        // await client.close(); // Only close if needed
     }
 }
 run().catch(console.dir);
 
-
-
+// Home route
 app.get('/', (req, res) => {
     res.send(' Freelance Hub Server: Empowering Your Projects with Top Talent Inspired by Tasky!');
 });
 
+// Server listen
 app.listen(port, () => {
     console.log(`Tasky server is running on port ${port}`);
 });
