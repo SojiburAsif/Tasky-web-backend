@@ -1,14 +1,15 @@
 const express = require('express');
 const cors = require('cors');
-const jwt = require('jsonwebtoken'); // ✅ JWT package import
 require('dotenv').config();
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-app.use(cors());
-app.use(express.json()); // ✅ Body parser
+app.use(cors({
+    origin:['https://symphonious-bubblegum-ad2f44.netlify.app', 'http://localhost:5173']
+}));
+app.use(express.json()); 
 
 // MongoDB URI
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@project-server.fv9q8on.mongodb.net/?retryWrites=true&w=majority&appName=Project-server`;
@@ -73,21 +74,7 @@ async function run() {
             res.send(result);
         });
 
-        // ✅ JWT Route
-        app.post('/jwt', (req, res) => {
-            const user = req.body;
 
-            // যদি email না থাকে তাহলে error
-            if (!user || !user.email) {
-                return res.status(400).send({ message: 'Email is required for token' });
-            }
-
-            const token = jwt.sign(user, process.env.JWT_ACCESS_SECRET, {
-                expiresIn: '2h',
-            });
-
-            res.send({ success: true, token });
-        });
 
     } finally {
         // await client.close(); // Only close if needed
